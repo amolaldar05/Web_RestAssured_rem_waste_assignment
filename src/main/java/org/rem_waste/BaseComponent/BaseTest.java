@@ -4,6 +4,7 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.safari.SafariDriver;
@@ -47,7 +48,13 @@ public class BaseTest {
         switch (browserName) {
             case "chrome":
                 WebDriverManager.chromedriver().setup();
-                driver.set(new ChromeDriver());
+                if( ConfigReader.get("headless").equalsIgnoreCase("true")) {
+                    ChromeOptions options = new ChromeOptions();
+                    options.addArguments("--headless", "--disable-gpu", "--window-size=1920,1080");
+                    driver.set(new ChromeDriver(options));
+                } else {
+                    driver.set(new ChromeDriver());
+                }
                 break;
             case "firefox":
                 WebDriverManager.firefoxdriver().setup();

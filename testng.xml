@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite name="All Test Suite">
+    <test name="API and UI Test Suite" verbose="2" preserve-order="true">
+        <classes>
+            <class name="org.rem_waste.apiTests.EndToEndAPITest">
+                <methods>
+                    <include name="getTokenTest"/>
+                    <include name="getAllProductsTest"/>
+                    <include name="addProductTest"/>
+                    <include name="createOrderTest"/>
+                    <include name="getOrderDetailsTest"/>
+                    <include name="checkAddedProductONUITest"/>
+                    <include name="deleteProductTest"/>
+                </methods>
+            </class>
+
+            <class name="org.rem_waste.uiTests.LoginTests">
+                <methods>
+                    <include name="validLoginTest"/>
+                    <include name="invalidLoginWithEmptyUsernameTest"/>
+                    <include name="invalidLoginWithEmptyPasswordTest"/>
+                    <include name="emptyLoginTest"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>

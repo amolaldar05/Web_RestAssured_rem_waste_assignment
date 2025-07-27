@@ -1,0 +1,13 @@
+[
+  {
+    "username": "jivan@gmail.com",
+    "password": "wrongPassword",
+    "toastMsg": "Incorrect email or password."
+  },
+  {
+    "username": "jivan@gmail.com",
+    "password": "Jivan@9900",
+    "toastMsg": "Login Successfully"
+  }
+
+]

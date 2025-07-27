@@ -10,7 +10,9 @@ import org.rem_waste.pageObjects.ProductListPage;
 import org.rem_waste.pojo.AddToCartRequest;
 import org.rem_waste.pojo.OrderDetailsResponse;
 import org.rem_waste.utils.ConfigReader;
+import org.rem_waste.utils.LoggerUtil;
 import org.rem_waste.utils.ResourceEnum;
+import org.slf4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -24,6 +26,8 @@ import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInC
 
 public class EndToEndAPITest extends BaseTest {
 
+    private static final Logger log = LoggerUtil.getLogger(EndToEndAPITest.class);
+
     SoftAssert softAssert;
     String token;
     String userId;
@@ -32,16 +36,19 @@ public class EndToEndAPITest extends BaseTest {
     String productOrderId;
     LoginPage loginPage;
     ProductListPage productListPage;
-    String productName= "Pen";
+    String productName = "Pen";
+
     @BeforeClass
     public void setup() {
         RestAssured.baseURI = ConfigReader.get("basePath");
-        loginPage= new LoginPage(getDriver());
+        loginPage = new LoginPage(getDriver());
         productListPage = new ProductListPage(getDriver());
+        log.info("Test setup completed. Base URI set to {}", RestAssured.baseURI);
     }
 
     @Test
     public void getTokenTest() {
+        log.info("⏳ Executing getTokenTest...");
         softAssert = new SoftAssert();
 
         Map<String, Object> map = new HashMap<>();
@@ -60,8 +67,9 @@ public class EndToEndAPITest extends BaseTest {
 
         JsonPath jsonPath = new JsonPath(response);
         token = jsonPath.getString("token");
-        userId = jsonPath.get("userId");
+        userId = jsonPath.getString("userId");
 
+        log.info(" Token received: {}", token);
         softAssert.assertNotNull(token, "Token is null.");
         softAssert.assertEquals(jsonPath.getString("message"), "Login Successfully", "Login message mismatch");
         softAssert.assertAll();
@@ -69,25 +77,22 @@ public class EndToEndAPITest extends BaseTest {
 
     @Test(dependsOnMethods = "getTokenTest")
     public void getAllProductsTest() {
+        log.info("⏳ Executing getAllProductsTest...");
         softAssert = new SoftAssert();
-        String body="{\n" +
-                "\"productName\": \"\",\n" +
-                "\"minPrice\": null,\n" +
-                "\"maxPrice\": null,\n" +
-                "\"productCategory\": [],\n" +
-                "\"productSubCategory\": [],\n" +
-                "\"productFor\": []\n" +
-                "}";
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("productName", "");
-        requestBody.put("minPrice", null);
-        requestBody.put("maxPrice", null);
-        requestBody.put("productCategory", new ArrayList<>());
-        requestBody.put("productSubCategory", new ArrayList<>());
-        requestBody.put("productFor", new ArrayList<>());
+
+        String body = """
+                {
+                  "productName": "",
+                  "minPrice": null,
+                  "maxPrice": null,
+                  "productCategory": [],
+                  "productSubCategory": [],
+                  "productFor": []
+                }
+                """;
 
         given().log().all()
-                .header("Authorization",  token)
+                .header("Authorization", token)
                 .contentType("application/json")
                 .body(body)
                 .when()
@@ -96,25 +101,26 @@ public class EndToEndAPITest extends BaseTest {
                 .log().all()
                 .statusCode(200)
                 .body(matchesJsonSchemaInClasspath("all_products_schema.json"));
-    }
 
+        log.info(" All products retrieved and validated against schema");
+    }
 
     @Test(dependsOnMethods = "getAllProductsTest")
     public void addProductTest() {
+        log.info("⏳ Executing addProductTest...");
         softAssert = new SoftAssert();
 
-        // Multipart (for image upload) needs special handling
         File productImage = new File(System.getProperty("user.dir") + "/src/main/resources/pen.png");
 
         String response = given().log().all()
-                .header("Authorization",token)
-                .multiPart("productName", "Pen")
+                .header("Authorization", token)
+                .multiPart("productName", productName)
                 .multiPart("productAddedBy", userId)
                 .multiPart("productCategory", "fashion")
                 .multiPart("productSubCategory", "Writing")
                 .multiPart("productPrice", "11500")
                 .multiPart("productDescription", "Goods")
-                .multiPart("productFor", "women")  // match casing with cart
+                .multiPart("productFor", "women")
                 .multiPart("productImage", productImage)
                 .when()
                 .post(ResourceEnum.ADD_PRODUCT.getResourcePath())
@@ -126,6 +132,7 @@ public class EndToEndAPITest extends BaseTest {
         JsonPath jsonPath = new JsonPath(response);
         productId = jsonPath.getString("productId");
 
+        log.info(" Product added successfully with ID: {}", productId);
         softAssert.assertNotNull(productId, "Product ID is null");
         softAssert.assertEquals(jsonPath.getString("message"), "Product Added Successfully");
         softAssert.assertAll();
@@ -133,10 +140,10 @@ public class EndToEndAPITest extends BaseTest {
 
     @Test(enabled = false)
     public void addProductToCartTest() throws JsonProcessingException {
-        RestAssured.baseURI = "https://rahulshettyacademy.com";
+        log.info(" Executing addProductToCartTest...");
 
         AddToCartRequest.Product product = new AddToCartRequest.Product();
-        product.set_id(productId); // ← set from response of addProduct()
+        product.set_id(productId);
         product.setProductName(productName);
         product.setProductCategory("fashion");
         product.setProductSubCategory("Writing");
@@ -146,15 +153,14 @@ public class EndToEndAPITest extends BaseTest {
         product.setProductTotalOrders("0");
         product.setProductStatus(true);
         product.setProductFor("women");
-        product.setProductAddedBy(userId); // ← logged-in user's ID
+        product.setProductAddedBy(userId);
         product.set__v(0);
 
         AddToCartRequest cartRequest = new AddToCartRequest();
-        cartRequest.set_id(userId); // ← logged-in user's ID
+        cartRequest.set_id(userId);
         cartRequest.setProduct(product);
 
-        // ✅ Print request body to debug
-        System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(cartRequest));
+        log.debug("🛒 Cart Request: {}", new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(cartRequest));
 
         String response = given().log().all()
                 .header("Authorization", token)
@@ -163,19 +169,19 @@ public class EndToEndAPITest extends BaseTest {
                 .when()
                 .post(ResourceEnum.ADD_TO_CART.getResourcePath())
                 .then()
-                .statusCode(200) // or 201 based on API
+                .statusCode(200)
                 .log().all()
                 .extract().asString();
 
         JsonPath jsonPath = new JsonPath(response);
         softAssert.assertEquals(jsonPath.getString("message"), "Product Added To Cart");
+        log.info(" Product added to cart successfully");
         softAssert.assertAll();
     }
 
-
-
     @Test(dependsOnMethods = "addProductTest")
     public void createOrderTest() {
+        log.info("⏳ Executing createOrderTest...");
         softAssert = new SoftAssert();
 
         Map<String, Object> orderDetails = new HashMap<>();
@@ -202,23 +208,20 @@ public class EndToEndAPITest extends BaseTest {
         List<String> orderIds = jsonPath.getList("orders");
         List<String> productOrderIds = jsonPath.getList("productOrderId");
 
-        Assert.assertNotNull(orderIds);
-        Assert.assertFalse(orderIds.isEmpty());
-        Assert.assertNotNull(productOrderIds);
-        Assert.assertFalse(productOrderIds.isEmpty());
-
         this.orderId = orderIds.get(0);
         this.productOrderId = productOrderIds.get(0);
 
+        log.info(" Order created: orderId={}, productOrderId={}", orderId, productOrderId);
         softAssert.assertAll();
     }
 
     @Test(dependsOnMethods = "createOrderTest")
     public void getOrderDetailsTest() {
+        log.info("⏳ Executing getOrderDetailsTest...");
         softAssert = new SoftAssert();
 
         OrderDetailsResponse orderResponse = given().log().all()
-                .header("Authorization",  token)
+                .header("Authorization", token)
                 .queryParam("id", orderId)
                 .when()
                 .get(ResourceEnum.GET_ORDER_DETAILS.getResourcePath())
@@ -229,30 +232,39 @@ public class EndToEndAPITest extends BaseTest {
 
         softAssert.assertEquals(orderResponse.getMessage(), "Orders fetched for customer Successfully");
 
-        System.out.println("Product: " + orderResponse.getData().getProductName());
-        System.out.println("Ordered by: " + orderResponse.getData().getOrderBy());
-        System.out.println("Price: " + orderResponse.getData().getOrderPrice());
+        log.info(" Order Details → Product: {}, Ordered by: {}, Price: {}",
+                orderResponse.getData().getProductName(),
+                orderResponse.getData().getOrderBy(),
+                orderResponse.getData().getOrderPrice());
 
         softAssert.assertAll();
     }
 
     @Test(dependsOnMethods = "createOrderTest")
-    public void checkAddedProductONUITest(){
+    public void checkAddedProductONUITest() {
+        log.info(" Executing checkAddedProductONUITest...");
+        softAssert = new SoftAssert();
+
         loginPage.enterUsername(ConfigReader.get("userEmail"));
         loginPage.enterPassword(ConfigReader.get("userPassword"));
         loginPage.clickLoginButton();
-        String successMsg=loginPage.getSuccessMsg();
+
+        String successMsg = loginPage.getSuccessMsg();
         softAssert.assertEquals(successMsg, "Login Successfully", "Login message mismatch");
+
         productListPage.getProductName(productName);
-        System.out.println("Product 'Pen' is displayed on UI after adding it via API.");
+
+        log.info(" Verified on UI: Product '{}' is displayed after API add", productName);
+        softAssert.assertAll();
     }
 
     @Test(dependsOnMethods = "checkAddedProductONUITest")
     public void deleteProduct() {
+        log.info("⏳ Executing deleteProduct...");
         softAssert = new SoftAssert();
 
         String response = given().log().all()
-                .header("Authorization",  token)
+                .header("Authorization", token)
                 .pathParam("productId", productId)
                 .when()
                 .delete(ResourceEnum.DELETE_PRODUCT.getResourcePath())
@@ -263,6 +275,8 @@ public class EndToEndAPITest extends BaseTest {
 
         JsonPath jsonPath = new JsonPath(response);
         softAssert.assertEquals(jsonPath.getString("message"), "Product Deleted Successfully");
+
+        log.info("🗑️ Product deleted successfully. ID: {}", productId);
         softAssert.assertAll();
     }
 }

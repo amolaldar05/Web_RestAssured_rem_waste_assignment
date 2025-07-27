@@ -17,6 +17,8 @@
         <wdm.version>6.2.0</wdm.version>
         <jackson-databind.version>2.19.2</jackson-databind.version>
         <schemaValidator.version>5.3.2</schemaValidator.version>
+        <slf4j.version>2.0.12</slf4j.version>
+        <logback.version>1.4.12</logback.version>
 
     </properties>
 
@@ -61,6 +63,21 @@
             <artifactId>json-schema-validator</artifactId>
             <version>${schemaValidator.version}</version>
         </dependency>
+
+
+            <!-- SLF4J API -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+
+            <!-- Logback Implementation -->
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
 
     </dependencies>
 

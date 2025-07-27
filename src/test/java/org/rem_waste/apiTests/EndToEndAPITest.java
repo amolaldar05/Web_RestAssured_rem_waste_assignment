@@ -112,7 +112,7 @@ public class EndToEndAPITest extends BaseTest {
 
         File productImage = new File(System.getProperty("user.dir") + "/src/main/resources/pen.png");
 
-        String response = given().log().all()
+        String response = given().log().body()
                 .header("Authorization", token)
                 .multiPart("productName", productName)
                 .multiPart("productAddedBy", userId)
@@ -126,7 +126,7 @@ public class EndToEndAPITest extends BaseTest {
                 .post(ResourceEnum.ADD_PRODUCT.getResourcePath())
                 .then()
                 .statusCode(201)
-                .log().all()
+                .log().ifValidationFails()
                 .extract().asString();
 
         JsonPath jsonPath = new JsonPath(response);
@@ -191,7 +191,9 @@ public class EndToEndAPITest extends BaseTest {
         Map<String, Object> payload = new HashMap<>();
         payload.put("orders", Collections.singletonList(orderDetails));
 
-        String response = given().log().all()
+        log.info("POST to {} with payload {}", ResourceEnum.CREATE_ORDER.getResourcePath(), payload);
+
+        String response = given()
                 .header("Authorization", token)
                 .header("Content-Type", "application/json")
                 .body(payload)
@@ -199,8 +201,10 @@ public class EndToEndAPITest extends BaseTest {
                 .post(ResourceEnum.CREATE_ORDER.getResourcePath())
                 .then()
                 .statusCode(201)
-                .log().all()
+                .log().ifError()  // Log details only on failure
                 .extract().asString();
+
+        log.info("Response: {}", response);
 
         JsonPath jsonPath = new JsonPath(response);
         softAssert.assertEquals(jsonPath.getString("message"), "Order Placed Successfully");
@@ -211,9 +215,10 @@ public class EndToEndAPITest extends BaseTest {
         this.orderId = orderIds.get(0);
         this.productOrderId = productOrderIds.get(0);
 
-        log.info(" Order created: orderId={}, productOrderId={}", orderId, productOrderId);
+        log.info("Order created: orderId={}, productOrderId={}", orderId, productOrderId);
         softAssert.assertAll();
     }
+
 
     @Test(dependsOnMethods = "createOrderTest")
     public void getOrderDetailsTest() {

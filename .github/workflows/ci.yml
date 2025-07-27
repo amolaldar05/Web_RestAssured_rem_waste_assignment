@@ -32,17 +32,13 @@ jobs:
       - name: 🧱 Install Dependencies
         run: mvn clean install -DskipTests=true
 
-      - name: 🖥️ Start Xvfb for Selenium UI tests
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
-          Xvfb :99 -ac &
-          export DISPLAY=:99
+      - name: 🖥️ Setup Xvfb for Selenium UI tests
+        uses: xu-cheng/xvfb-action@v1
 
       - name: 🧪 Run TestNG Tests (API + UI)
-        env:
-          DISPLAY: 99
         run: mvn test
+        env:
+          DISPLAY: :99
 
       - name: 📁 Archive TestNG Reports
         if: always()

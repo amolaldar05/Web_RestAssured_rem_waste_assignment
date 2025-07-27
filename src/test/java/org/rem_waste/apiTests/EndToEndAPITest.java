@@ -104,7 +104,7 @@ public class EndToEndAPITest extends BaseTest {
         softAssert = new SoftAssert();
 
         // Multipart (for image upload) needs special handling
-        File productImage = new File("/Users/catalinalive/Downloads/pen.png");
+        File productImage = new File(System.getProperty("user.dir") + "/src/main/resources/pen.png");
 
         String response = given().log().all()
                 .header("Authorization",token)

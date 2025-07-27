@@ -41,7 +41,7 @@ jobs:
 
       - name: 🧪 Run TestNG Tests (API + UI)
         env:
-          DISPLAY: :99
+          DISPLAY: 99
         run: mvn test
 
       - name: 📁 Archive TestNG Reports

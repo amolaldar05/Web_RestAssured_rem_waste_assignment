@@ -59,7 +59,7 @@ public class BaseTest {
                 if (ConfigReader.get("headless").equalsIgnoreCase("true")) {
                     log.info("Running Chrome in headless mode");
                     ChromeOptions options = new ChromeOptions();
-                    options.addArguments("--headless", "--disable-gpu", "--window-size=1920,1080");
+                    options.addArguments("--headless", "--disable-gpu", "--window-size=1920,1080","start-maximized");
                     driver.set(new ChromeDriver(options));
                 } else {
                     log.info("Running Chrome in normal mode");
